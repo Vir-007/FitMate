@@ -40,7 +40,7 @@ abstract class Exercise(
                 ("$name correct form how to").replace(" ", "+")
         }
 
-    abstract val category: ExerciseCategory
+    
 
     /** How long this exercise usually takes, in minutes. Each subclass works it out differently. */
     abstract fun estimatedMinutes(): Int
