@@ -21,14 +21,22 @@ final class WorkoutSession: Identifiable, Describable {
     let day: Weekday
     let focus: String
     let exercises: [Exercise]
+    /// Day 1–7 of the week, set by `BasePlanStrategy.buildPlan`. 0 means "not placed in a plan yet".
+    let dayNumber: Int
 
-    init(day: Weekday, focus: String, exercises: [Exercise]) {
+    init(day: Weekday, focus: String, exercises: [Exercise], dayNumber: Int = 0) {
         self.day = day
         self.focus = focus
         self.exercises = exercises
+        self.dayNumber = dayNumber
     }
 
     var id: Int { day.rawValue }
+
+    /// CultFit-style label: "Day 1 — Chest Day". Falls back to just the focus when unplaced.
+    var dayLabel: String {
+        (1...7).contains(dayNumber) ? "Day \(dayNumber) — \(focus)" : focus
+    }
 
     var isRestDay: Bool { exercises.isEmpty }
 
@@ -43,7 +51,7 @@ final class WorkoutSession: Identifiable, Describable {
         }
     }
 
-    var title: String { "\(day.shortName) · \(focus)" }
+    var title: String { "\(dayLabel) · \(day.shortName)" }
 
     var subtitle: String {
         isRestDay ? "Recovery day" : "\(exercises.count) exercises · ~\(totalMinutes()) min"
@@ -76,5 +84,10 @@ final class WorkoutPlan {
 
     func session(for day: Weekday) -> WorkoutSession? {
         sessions.first { $0.day == day }
+    }
+
+    /// Day 1 is Monday, Day 7 is Sunday.
+    func session(forDayNumber dayNumber: Int) -> WorkoutSession? {
+        sessions.first { $0.dayNumber == dayNumber }
     }
 }

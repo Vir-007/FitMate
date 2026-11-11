@@ -94,15 +94,21 @@ private struct TodayCard: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("TODAY'S PLAN").font(.caption.bold()).foregroundStyle(.secondary)
             if let session {
-                Text("\(session.emoji) \(session.focus)").font(.title2.bold())
+                Text("\(session.emoji) \(session.dayLabel)").font(.title2.bold())
                 Text(session.subtitle)
                 if !session.isRestDay {
                     Text(session.exercises.map(\.name).joined(separator: " · "))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Button("Start workout", action: openWorkouts)
-                        .buttonStyle(.borderedProminent)
-                        .padding(.top, 4)
+                    HStack(spacing: 8) {
+                        Button("Start workout", action: openWorkouts)
+                            .buttonStyle(.borderedProminent)
+                        if let first = session.exercises.first,
+                           let url = URL(string: first.youtubeUrl) {
+                            Link("▶ Watch", destination: url)
+                        }
+                    }
+                    .padding(.top, 4)
                 }
             } else {
                 Text("No session planned today.")

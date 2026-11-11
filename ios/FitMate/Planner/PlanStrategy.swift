@@ -18,9 +18,11 @@ class BasePlanStrategy: PlanStrategy {
     func weeklySchedule() -> [WorkoutSession] { fatalError("Subclasses must override weeklySchedule()") }
 
     final func buildPlan(level: Difficulty) -> WorkoutPlan {
-        let sessions = weeklySchedule().map { session in
+        // Day 1 is Monday, Day 7 is Sunday: the list order is the week order.
+        let sessions = weeklySchedule().enumerated().map { index, session in
             WorkoutSession(day: session.day, focus: session.focus,
-                           exercises: session.exercises.map { $0.scaled(for: level) })
+                           exercises: session.exercises.map { $0.scaled(for: level) },
+                           dayNumber: index + 1)
         }
         return WorkoutPlan(name: planName, goal: goal, level: level, sessions: sessions)
     }
@@ -40,13 +42,14 @@ final class FatLossStrategy: BasePlanStrategy {
     override var planName: String { "Fat Burn Program" }
 
     override func weeklySchedule() -> [WorkoutSession] {
+        // CultFit-style week: every day has a clear name — Day 1 Chest Day, Day 2 Leg Day, …
         [
-            day(.monday, "HIIT + Full body", "burpees", "squats", "pushups", "crunches"),
-            day(.tuesday, "Steady cardio", "running", "hamstring_stretch"),
-            day(.wednesday, "Active recovery", "brisk_walk", "sun_salutation", "cat_cow"),
-            day(.thursday, "HIIT + Legs", "mountain_climbers", "lunges", "glute_bridge"),
-            day(.friday, "Cardio + Upper body", "cycling", "rows", "shoulder_press"),
-            day(.saturday, "Tabata finisher", "tabata", "jump_rope", "childs_pose"),
+            day(.monday, "Full-Body HIIT Day", "burpees", "squats", "pushups", "crunches"),
+            day(.tuesday, "Cardio Day", "running", "crunches", "hamstring_stretch"),
+            day(.wednesday, "Leg Day", "mountain_climbers", "lunges", "glute_bridge"),
+            day(.thursday, "Upper-Body Day", "cycling", "rows", "shoulder_press", "dips"),
+            day(.friday, "Tabata Day", "tabata", "jump_rope", "childs_pose"),
+            day(.saturday, "Recovery Yoga Day", "brisk_walk", "sun_salutation", "cat_cow"),
             rest(.sunday)
         ]
     }
@@ -58,12 +61,12 @@ final class MuscleGainStrategy: BasePlanStrategy {
 
     override func weeklySchedule() -> [WorkoutSession] {
         [
-            day(.monday, "Push", "pushups", "shoulder_press", "dips", "crunches"),
-            day(.tuesday, "Pull", "rows", "curls", "deadlifts"),
-            day(.wednesday, "Legs", "squats", "lunges", "glute_bridge", "crunches"),
-            day(.thursday, "Mobility", "cat_cow", "hip_opener", "hamstring_stretch"),
-            day(.friday, "Upper body", "pushups", "rows", "shoulder_press", "curls"),
-            day(.saturday, "Lower body + Core", "squats", "deadlifts", "crunches"),
+            day(.monday, "Chest Day", "pushups", "dips", "crunches"),
+            day(.tuesday, "Back Day", "rows", "curls", "deadlifts"),
+            day(.wednesday, "Leg Day", "squats", "lunges", "glute_bridge", "crunches"),
+            day(.thursday, "Shoulder Day", "shoulder_press", "pushups", "dips"),
+            day(.friday, "Full-Body Day", "squats", "rows", "pushups", "deadlifts"),
+            day(.saturday, "Mobility Day", "cat_cow", "hip_opener", "hamstring_stretch", "sun_salutation"),
             rest(.sunday)
         ]
     }
@@ -75,12 +78,12 @@ final class GeneralFitnessStrategy: BasePlanStrategy {
 
     override func weeklySchedule() -> [WorkoutSession] {
         [
-            day(.monday, "Full-body strength", "squats", "pushups", "rows", "crunches"),
-            day(.tuesday, "Cardio", "running", "hamstring_stretch"),
-            day(.wednesday, "Yoga flow", "sun_salutation", "cobra", "childs_pose"),
-            day(.thursday, "HIIT", "mountain_climbers", "lunges", "glute_bridge"),
-            day(.friday, "Cardio + Core", "cycling", "crunches"),
-            day(.saturday, "Outdoor walk", "brisk_walk", "hip_opener"),
+            day(.monday, "Full-Body Day", "squats", "pushups", "rows", "crunches"),
+            day(.tuesday, "Cardio Day", "running", "hamstring_stretch"),
+            day(.wednesday, "Yoga Day", "sun_salutation", "cobra", "childs_pose"),
+            day(.thursday, "HIIT Day", "mountain_climbers", "lunges", "glute_bridge"),
+            day(.friday, "Core & Cardio Day", "cycling", "crunches"),
+            day(.saturday, "Legs & Walk Day", "brisk_walk", "hip_opener", "squats"),
             rest(.sunday)
         ]
     }
@@ -94,12 +97,12 @@ final class FlexibilityStrategy: BasePlanStrategy {
         // Generics in action: grab every stretch in the library without listing ids.
         let allStretches: [Exercise] = ExerciseLibrary.shared.ofType(FlexibilityExercise.self)
         return [
-            day(.monday, "Morning yoga", "sun_salutation", "cat_cow", "cobra"),
-            day(.tuesday, "Walk + Hips", "brisk_walk", "hip_opener", "hamstring_stretch"),
-            WorkoutSession(day: .wednesday, focus: "Full stretch routine", exercises: allStretches),
-            day(.thursday, "Core & posture", "glute_bridge", "crunches", "cobra"),
-            day(.friday, "Yoga flow", "sun_salutation", "childs_pose", "hip_opener"),
-            day(.saturday, "Easy cycling", "cycling", "hamstring_stretch"),
+            day(.monday, "Yoga Day", "sun_salutation", "cat_cow", "cobra"),
+            day(.tuesday, "Hips Day", "brisk_walk", "hip_opener", "hamstring_stretch"),
+            WorkoutSession(day: .wednesday, focus: "Full Stretch Day", exercises: allStretches),
+            day(.thursday, "Core Day", "glute_bridge", "crunches", "cobra"),
+            day(.friday, "Yoga Flow Day", "sun_salutation", "childs_pose", "hip_opener"),
+            day(.saturday, "Stretch & Cycle Day", "cycling", "hamstring_stretch"),
             rest(.sunday)
         ]
     }

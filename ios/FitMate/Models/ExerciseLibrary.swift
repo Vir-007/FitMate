@@ -1,6 +1,12 @@
 import Foundation
 
 /// SINGLETON: `shared` is the one and only instance — the private init stops anyone creating another.
+///
+/// VIDEOS: every exercise gets a YouTube link from `Exercise.youtubeUrl`.
+/// By default that is a YouTube search for "how to do <exercise> with correct
+/// form", so the link never goes dead. To pin one specific video for an
+/// exercise, pass its full watch URL as `videoUrl: "https://www.youtube.com/watch?v=…"`
+/// on that exercise below — that is the one place to change it.
 final class ExerciseLibrary {
     static let shared = ExerciseLibrary()
 

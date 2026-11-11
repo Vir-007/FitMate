@@ -13,6 +13,8 @@ The class names match across the two apps (`Exercise`, `UserProfile`, `PlanStrat
 
 - **Onboarding & profile**: name, age, height, weight, gender, activity level, goal and experience level. Invalid values are rejected by the model itself.
 - **Personal workout planner**: a 7-day plan generated from your goal (Fat Burn, Push/Pull/Legs, Balanced, Mobility & Yoga) and scaled to your level.
+- **CultFit-style day-by-day split**: every week is Day 1 to Day 7, with a clear name for each day — Day 1 Chest Day, Day 2 Back Day, Day 3 Leg Day, Day 4 Shoulder Day, and so on (Day 1 is Monday, Day 7 is Sunday). Tap a day in the strip at the top of Workouts to see just that day's exercises. Today's day is selected first.
+- **Watch how to do it on YouTube**: every exercise has a ▶ Watch button, in the plan, in today's card on Home, and in the exercise library. It opens YouTube for that move, so you can see the correct form before you start. Each exercise has a `videoUrl` field; by default it opens a YouTube search for "how to do \<exercise\> with correct form", so the link never goes dead. To pin one specific video, set that exercise's `videoUrl` to its full `https://www.youtube.com/watch?v=…` link in `ExerciseLibrary` — that is the one place to change it, in both apps.
 - **Exercise library**: 23 exercises in 4 categories (Strength, Cardio, HIIT, Flexibility), each with its own calorie formula.
 - **Workout tracker**: log a workout, see calories burned, a day streak, a 7-day bar chart and progress toward the WHO's 150 active minutes a week.
 - **BMI calculator & health numbers**: BMI with a colour gauge, healthy weight range, BMR, daily calorie target, protein and water intake.
@@ -36,6 +38,8 @@ The class names match across the two apps (`Exercise`, `UserProfile`, `PlanStrat
 | Concept | Kotlin (Android) | Swift (iOS) |
 |---|---|---|
 | **Classes & objects** | `UserProfile`, `WorkoutPlan`, `WorkoutSession`, `SuggestionEngine` | same classes |
+| **Day-by-day plan** | `WorkoutSession.dayNumber` (1–7) and `dayLabel` ("Day 1 — Chest Day"), set by `BasePlanStrategy.buildPlan()` | same, set by `BasePlanStrategy.buildPlan(level:)` |
+| **YouTube video per exercise** | `Exercise.videoUrl` + computed `youtubeUrl` (pinned video, or a YouTube search fallback); `scaledFor()` keeps the same link | same, `scaled(for:)` keeps the same link |
 | **Encapsulation** | [`UserProfile.kt`](android/app/src/main/java/com/fitmate/app/model/UserProfile.kt): validating setters with `require(...)`. `FitnessViewModel` exposes state with `private set` | [`UserProfile.swift`](ios/FitMate/Models/UserProfile.swift): `private(set)` properties + throwing `setWeight(_:)` etc. `FitnessStore` uses `@Published private(set)` |
 | **Abstraction** | `abstract class Exercise`, `interface HealthMetric`, `interface ReminderScheduler` | `class Exercise` with abstract members, `protocol HealthMetric`, `protocol NotificationScheduler` |
 | **Inheritance** | `Exercise → StrengthExercise / CardioExercise / FlexibilityExercise`. `BasePlanStrategy → FatLossStrategy …`. `ReminderReceiver : BroadcastReceiver` | same hierarchy. `NotificationDelegate : NSObject` |
@@ -153,7 +157,7 @@ From a terminal instead (inside `android/`):
 ./gradlew assembleDebug testDebugUnitTest
 ```
 
-The unit tests in [`DomainTest.kt`](android/app/src/test/java/com/fitmate/app/DomainTest.kt) cover encapsulation, inheritance, polymorphism, the factory/strategy patterns, streak tracking and the suggestion engine. All 11 pass.
+The unit tests in [`DomainTest.kt`](android/app/src/test/java/com/fitmate/app/DomainTest.kt) cover encapsulation, inheritance, polymorphism, the factory/strategy patterns, streak tracking, the suggestion engine, the day-by-day plan and the YouTube links. All 14 pass.
 
 ## Running the iOS app (needs a Mac)
 
@@ -209,3 +213,46 @@ FitMate/
 - All data stays on the device (SharedPreferences on Android, UserDefaults on iOS). No account or internet is needed.
 - Android daily reminders use inexact alarms, so the OS may deliver them a few minutes late to save battery. Use **Test now** in a demo.
 - The Android app was built, unit-tested and run on an emulator. The iOS code mirrors it but still needs its first build in Xcode on a Mac.
+
+
+## Android Build and APK Generation
+
+### Prerequisites
+- Android Studio
+- JDK 17 or later
+- Android SDK
+- Android SDK Platform Tools
+
+### Configure Android SDK
+
+Create `android/local.properties` and set your local Android SDK path:
+
+```properties
+sdk.dir=/path/to/your/Android/sdk
+```
+
+Note: `local.properties` is machine-specific and should not be committed to Git.
+
+### Build the Debug APK
+
+From the project root:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
+
+The generated APK will be available at `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+### Run Unit Tests
+
+```bash
+cd android
+./gradlew testDebugUnitTest
+```
+
+### Install on a Connected Android Device
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
