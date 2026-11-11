@@ -213,3 +213,46 @@ FitMate/
 - All data stays on the device (SharedPreferences on Android, UserDefaults on iOS). No account or internet is needed.
 - Android daily reminders use inexact alarms, so the OS may deliver them a few minutes late to save battery. Use **Test now** in a demo.
 - The Android app was built, unit-tested and run on an emulator. The iOS code mirrors it but still needs its first build in Xcode on a Mac.
+
+
+## Android Build and APK Generation
+
+### Prerequisites
+- Android Studio
+- JDK 17 or later
+- Android SDK
+- Android SDK Platform Tools
+
+### Configure Android SDK
+
+Create `android/local.properties` and set your local Android SDK path:
+
+```properties
+sdk.dir=/path/to/your/Android/sdk
+```
+
+Note: `local.properties` is machine-specific and should not be committed to Git.
+
+### Build the Debug APK
+
+From the project root:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
+
+The generated APK will be available at `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+### Run Unit Tests
+
+```bash
+cd android
+./gradlew testDebugUnitTest
+```
+
+### Install on a Connected Android Device
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
