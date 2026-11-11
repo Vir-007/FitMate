@@ -24,3 +24,21 @@ DerivedData/
 # OS
 .DS_Store
 Thumbs.db
+
+# Python backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
+backend/.pytest_cache/
+backend/.coverage
+
+# Desktop / JCEF runtime and browser cache
+desktop/jcef-bundle/
+desktop/jcef-bundle-146-backup/
+desktop/jcef-cache/
+desktop/.gradle/
+desktop/build/
+
+# Local SQLite database
+backend/fitmate.db

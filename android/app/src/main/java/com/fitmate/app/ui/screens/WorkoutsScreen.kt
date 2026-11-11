@@ -1,7 +1,5 @@
 package com.fitmate.app.ui.screens
 
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -14,8 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -27,12 +27,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.fitmate.app.tutorial.Tutorial
+import com.fitmate.app.tutorial.TutorialApiClient
+import com.fitmate.app.tutorial.TutorialWebPlayer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.fitmate.app.model.Exercise
 import com.fitmate.app.model.ExerciseCategory
 import com.fitmate.app.model.ExerciseLibrary
@@ -53,11 +60,34 @@ fun WorkoutsScreen(viewModel: FitnessViewModel, profile: UserProfile) {
     var showLibrary by rememberSaveable { mutableStateOf(false) }
     var category by rememberSaveable { mutableStateOf<ExerciseCategory?>(null) }
     var exerciseToLog by remember { mutableStateOf<Exercise?>(null) }
+    var tutorialExercise by remember { mutableStateOf<Exercise?>(null) }
+    var tutorial by remember { mutableStateOf<Tutorial?>(null) }
+    var tutorialLoading by remember { mutableStateOf(false) }
+    var tutorialError by remember { mutableStateOf<String?>(null) }
+    val tutorialScope = rememberCoroutineScope()
+
     val plan = viewModel.plan
+
     // CultFit-style day strip: Day 1 is Monday. Today is selected first.
     var selectedDay by rememberSaveable { mutableStateOf(LocalDate.now().dayOfWeek.value) }
+
     val openVideo: (Exercise) -> Unit = { exercise ->
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(exercise.youtubeUrl)))
+        tutorialExercise = exercise
+        tutorial = null
+        tutorialError = null
+        tutorialLoading = true
+
+        tutorialScope.launch {
+            try {
+                tutorial = withContext(Dispatchers.IO) {
+                    TutorialApiClient.searchTutorial(exercise.name)
+                }
+            } catch (exception: Exception) {
+                tutorialError = exception.message ?: "Unable to load tutorial."
+            } finally {
+                tutorialLoading = false
+            }
+        }
     }
 
     LazyColumn(
@@ -119,6 +149,55 @@ fun WorkoutsScreen(viewModel: FitnessViewModel, profile: UserProfile) {
                 ExerciseCard(exercise, profile.weightKg, onLog = { exerciseToLog = exercise }, onWatch = openVideo)
             }
         }
+    }
+
+    tutorialExercise?.let { exercise ->
+        AlertDialog(
+            onDismissRequest = {
+                tutorialExercise = null
+                tutorial = null
+                tutorialError = null
+            },
+            title = {
+                Text("How to do ${exercise.name}")
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    when {
+                        tutorialLoading -> {
+                            CircularProgressIndicator()
+                            Text("Finding the best tutorial...")
+                        }
+
+                        tutorialError != null -> {
+                            Text(
+                                tutorialError ?: "Unable to load tutorial.",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        tutorial != null -> {
+                            Text(
+                                tutorial!!.title,
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            TutorialWebPlayer(tutorial = tutorial!!)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        tutorialExercise = null
+                        tutorial = null
+                        tutorialError = null
+                    }
+                ) {
+                    Text("Close")
+                }
+            }
+        )
     }
 
     exerciseToLog?.let { exercise ->
