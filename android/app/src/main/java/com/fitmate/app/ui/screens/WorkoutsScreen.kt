@@ -1,7 +1,10 @@
 package com.fitmate.app.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,12 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -49,12 +54,17 @@ fun WorkoutsScreen(viewModel: FitnessViewModel, profile: UserProfile) {
     var category by rememberSaveable { mutableStateOf<ExerciseCategory?>(null) }
     var exerciseToLog by remember { mutableStateOf<Exercise?>(null) }
     val plan = viewModel.plan
+    // CultFit-style day strip: Day 1 is Monday. Today is selected first.
+    var selectedDay by rememberSaveable { mutableStateOf(LocalDate.now().dayOfWeek.value) }
+    val openVideo: (Exercise) -> Unit = { exercise ->
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(exercise.youtubeUrl)))
+    }
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { ScreenHeader("Workouts", "Your weekly plan and the full exercise library") }
+        item { ScreenHeader("Workouts", "Your day-by-day plan — tap a day, watch each move on YouTube") }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = !showLibrary, onClick = { showLibrary = false }, label = { Text("My plan") })
@@ -64,11 +74,36 @@ fun WorkoutsScreen(viewModel: FitnessViewModel, profile: UserProfile) {
 
         if (!showLibrary && plan != null) {
             item { PlanSummaryCard(plan, profile.weightKg) }
+            // Day 1–7 strip, like CultFit's weekly schedule.
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    plan.sessions.forEach { session ->
+                        FilterChip(
+                            selected = session.dayNumber == selectedDay,
+                            onClick = { selectedDay = session.dayNumber },
+                            label = {
+                                Text(
+                                    if (session.isRestDay) "Day ${session.dayNumber} · Rest"
+                                    else "Day ${session.dayNumber} · ${session.dayName}"
+                                )
+                            }
+                        )
+                    }
+                }
+            }
             items(plan.sessions, key = { it.day.name }) { session ->
                 SessionCard(
                     session = session,
                     isToday = session.day == LocalDate.now().dayOfWeek,
-                    onLog = { exerciseToLog = it }
+                    expanded = session.dayNumber == selectedDay,
+                    onToggle = { selectedDay = session.dayNumber },
+                    onLog = { exerciseToLog = it },
+                    onWatch = openVideo
                 )
             }
         } else {
@@ -81,7 +116,7 @@ fun WorkoutsScreen(viewModel: FitnessViewModel, profile: UserProfile) {
                 )
             }
             items(ExerciseLibrary.byCategory(category), key = { it.id }) { exercise ->
-                ExerciseCard(exercise, profile.weightKg, onLog = { exerciseToLog = exercise })
+                ExerciseCard(exercise, profile.weightKg, onLog = { exerciseToLog = exercise }, onWatch = openVideo)
             }
         }
     }
@@ -118,7 +153,9 @@ private fun PlanSummaryCard(plan: WorkoutPlan, weightKg: Double) {
                 PlanFigure("${plan.weeklyCalories(weightKg).roundToInt()}", "kcal / week", Modifier.weight(1f))
             }
             Text(
-                "Change your goal or experience in Profile to get a new plan.",
+                "Day-by-day split: Day 1 is Monday, Day 7 is Sunday. " +
+                    "Tap a day above to see its exercises, then tap ▶ Watch to see how to do each move on YouTube. " +
+                    "Change your goal or experience in Profile to get a new plan.",
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -134,8 +171,14 @@ private fun PlanFigure(value: String, label: String, modifier: Modifier) {
 }
 
 @Composable
-private fun SessionCard(session: WorkoutSession, isToday: Boolean, onLog: (Exercise) -> Unit) {
-    var expanded by rememberSaveable(session.day) { mutableStateOf(isToday) }
+private fun SessionCard(
+    session: WorkoutSession,
+    isToday: Boolean,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onLog: (Exercise) -> Unit,
+    onWatch: (Exercise) -> Unit
+) {
     val colors = if (isToday) {
         CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
     } else {
@@ -144,7 +187,7 @@ private fun SessionCard(session: WorkoutSession, isToday: Boolean, onLog: (Exerc
     Card(
         Modifier
             .fillMaxWidth()
-            .clickable(enabled = !session.isRestDay) { expanded = !expanded },
+            .clickable(enabled = !session.isRestDay) { onToggle() },
         colors = colors
     ) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -162,7 +205,10 @@ private fun SessionCard(session: WorkoutSession, isToday: Boolean, onLog: (Exerc
                 HorizontalDivider()
                 session.exercises.forEach { exercise ->
                     DescribableRow(exercise) {
-                        TextButton(onClick = { onLog(exercise) }) { Text("Log") }
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = { onWatch(exercise) }) { Text("▶ Watch") }
+                            TextButton(onClick = { onLog(exercise) }) { Text("Log") }
+                        }
                     }
                 }
             }
@@ -171,7 +217,7 @@ private fun SessionCard(session: WorkoutSession, isToday: Boolean, onLog: (Exerc
 }
 
 @Composable
-private fun ExerciseCard(exercise: Exercise, weightKg: Double, onLog: () -> Unit) {
+private fun ExerciseCard(exercise: Exercise, weightKg: Double, onLog: () -> Unit, onWatch: (Exercise) -> Unit) {
     val minutes = exercise.estimatedMinutes()
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp)) {
@@ -186,6 +232,10 @@ private fun ExerciseCard(exercise: Exercise, weightKg: Double, onLog: () -> Unit
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 6.dp)
             )
+            OutlinedButton(
+                onClick = { onWatch(exercise) },
+                modifier = Modifier.padding(top = 8.dp)
+            ) { Text("▶ Watch how to do it on YouTube") }
         }
     }
 }

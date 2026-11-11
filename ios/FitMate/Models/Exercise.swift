@@ -17,13 +17,29 @@ class Exercise: Identifiable, Describable {
     let level: Difficulty
     /// Metabolic Equivalent of Task: how many times resting energy this activity burns.
     let met: Double
+    /**
+     * Optional link to one specific "how to do it" video on YouTube.
+     * Leave it blank and `youtubeUrl` falls back to a YouTube search for
+     * this exercise, so the link can never go dead. To pin a single video,
+     * set this to its full https://www.youtube.com/watch?v=… URL in
+     * `ExerciseLibrary` — that is the one place to change it.
+     */
+    let videoUrl: String
 
-    init(id: String, name: String, details: String, level: Difficulty, met: Double) {
+    init(id: String, name: String, details: String, level: Difficulty, met: Double, videoUrl: String = "") {
         self.id = id
         self.name = name
         self.details = details
         self.level = level
         self.met = met
+        self.videoUrl = videoUrl
+    }
+
+    /// YouTube link for this exercise: the pinned video, or a YouTube search for it.
+    var youtubeUrl: String {
+        if !videoUrl.isEmpty { return videoUrl }
+        let query = "\(name) correct form how to".replacingOccurrences(of: " ", with: "+")
+        return "https://www.youtube.com/results?search_query=\(query)"
     }
 
     // MARK: Abstract members — subclasses must override
@@ -56,11 +72,11 @@ final class StrengthExercise: Exercise {
     let reps: Int
 
     init(id: String, name: String, details: String, level: Difficulty, met: Double,
-         muscleGroup: MuscleGroup, sets: Int, reps: Int) {
+         muscleGroup: MuscleGroup, sets: Int, reps: Int, videoUrl: String = "") {
         self.muscleGroup = muscleGroup
         self.sets = sets
         self.reps = reps
-        super.init(id: id, name: name, details: details, level: level, met: met)
+        super.init(id: id, name: name, details: details, level: level, met: met, videoUrl: videoUrl)
     }
 
     override var category: ExerciseCategory { .strength }
@@ -75,7 +91,7 @@ final class StrengthExercise: Exercise {
 
     override func scaled(for level: Difficulty) -> Exercise {
         StrengthExercise(id: id, name: name, details: details, level: level, met: met,
-                         muscleGroup: muscleGroup, sets: sets + level.extraSets, reps: reps)
+                         muscleGroup: muscleGroup, sets: sets + level.extraSets, reps: reps, videoUrl: videoUrl)
     }
 }
 
@@ -83,9 +99,9 @@ final class StrengthExercise: Exercise {
 class CardioExercise: Exercise {
     let durationMinutes: Int
 
-    init(id: String, name: String, details: String, level: Difficulty, met: Double, durationMinutes: Int) {
+    init(id: String, name: String, details: String, level: Difficulty, met: Double, durationMinutes: Int, videoUrl: String = "") {
         self.durationMinutes = durationMinutes
-        super.init(id: id, name: name, details: details, level: level, met: met)
+        super.init(id: id, name: name, details: details, level: level, met: met, videoUrl: videoUrl)
     }
 
     override var category: ExerciseCategory { .cardio }
@@ -96,7 +112,7 @@ class CardioExercise: Exercise {
 
     override func scaled(for level: Difficulty) -> Exercise {
         let minutes = Int((Double(durationMinutes) * level.durationFactor).rounded())
-        return CardioExercise(id: id, name: name, details: details, level: level, met: met, durationMinutes: minutes)
+        return CardioExercise(id: id, name: name, details: details, level: level, met: met, durationMinutes: minutes, videoUrl: videoUrl)
     }
 }
 
@@ -109,12 +125,12 @@ final class HiitExercise: CardioExercise {
     let restSeconds: Int
 
     init(id: String, name: String, details: String, level: Difficulty, met: Double,
-         rounds: Int, workSeconds: Int, restSeconds: Int) {
+         rounds: Int, workSeconds: Int, restSeconds: Int, videoUrl: String = "") {
         self.rounds = rounds
         self.workSeconds = workSeconds
         self.restSeconds = restSeconds
         let minutes = Int((Double(rounds * (workSeconds + restSeconds)) / 60).rounded(.up))
-        super.init(id: id, name: name, details: details, level: level, met: met, durationMinutes: minutes)
+        super.init(id: id, name: name, details: details, level: level, met: met, durationMinutes: minutes, videoUrl: videoUrl)
     }
 
     override var category: ExerciseCategory { .hiit }
@@ -128,7 +144,7 @@ final class HiitExercise: CardioExercise {
 
     override func scaled(for level: Difficulty) -> Exercise {
         HiitExercise(id: id, name: name, details: details, level: level, met: met,
-                     rounds: rounds + level.extraSets * 2, workSeconds: workSeconds, restSeconds: restSeconds)
+                     rounds: rounds + level.extraSets * 2, workSeconds: workSeconds, restSeconds: restSeconds, videoUrl: videoUrl)
     }
 }
 
@@ -137,10 +153,10 @@ final class FlexibilityExercise: Exercise {
     let rounds: Int
 
     init(id: String, name: String, details: String, level: Difficulty, met: Double,
-         holdSeconds: Int, rounds: Int) {
+         holdSeconds: Int, rounds: Int, videoUrl: String = "") {
         self.holdSeconds = holdSeconds
         self.rounds = rounds
-        super.init(id: id, name: name, details: details, level: level, met: met)
+        super.init(id: id, name: name, details: details, level: level, met: met, videoUrl: videoUrl)
     }
 
     override var category: ExerciseCategory { .flexibility }
@@ -154,6 +170,6 @@ final class FlexibilityExercise: Exercise {
 
     override func scaled(for level: Difficulty) -> Exercise {
         FlexibilityExercise(id: id, name: name, details: details, level: level, met: met,
-                            holdSeconds: holdSeconds, rounds: rounds + level.extraSets)
+                            holdSeconds: holdSeconds, rounds: rounds + level.extraSets, videoUrl: videoUrl)
     }
 }

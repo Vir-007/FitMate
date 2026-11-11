@@ -127,4 +127,39 @@ class DomainTest {
         assertEquals(suggestions.sortedBy { it.priority.ordinal }, suggestions)
         assertTrue(suggestions.any { it.priority == Priority.LOW })
     }
+
+    // --- CultFit-style day plan + YouTube videos ---
+
+    @Test
+    fun everyExerciseHasAYouTubeLink() {
+        ExerciseLibrary.all.forEach { exercise ->
+            assertTrue(exercise.youtubeUrl.startsWith("https://www.youtube.com/"))
+            assertTrue(exercise.youtubeUrl.contains("youtube.com"))
+        }
+        assertEquals(23, ExerciseLibrary.all.size)
+    }
+
+    @Test
+    fun scaledExerciseKeepsItsVideoLink() {
+        val pushups = ExerciseLibrary["pushups"]
+        val advanced = pushups.scaledFor(Difficulty.ADVANCED)
+        assertEquals(pushups.youtubeUrl, advanced.youtubeUrl)
+    }
+
+    @Test
+    fun planIsNumberedDay1ToDay7WithClearDayNames() {
+        FitnessGoal.entries.forEach { goal ->
+            val plan = WorkoutPlanFactory.createPlan(profile(goal))
+            assertEquals((1..7).toList(), plan.sessions.map { it.dayNumber })
+            assertEquals("Day 1 — ${plan.sessions[0].focus}", plan.sessions[0].dayLabel)
+            assertEquals(plan.sessions[0], plan.sessionFor(1))
+            assertTrue(plan.sessions[0].title.startsWith("Day 1 — "))
+        }
+        // The muscle plan is the classic split the user asked for.
+        val musclePlan = WorkoutPlanFactory.createPlan(profile(FitnessGoal.BUILD_MUSCLE))
+        assertEquals("Chest Day", musclePlan.sessions[0].focus)
+        assertEquals("Back Day", musclePlan.sessions[1].focus)
+        assertEquals("Leg Day", musclePlan.sessions[2].focus)
+        assertTrue(musclePlan.sessions[6].isRestDay)
+    }
 }

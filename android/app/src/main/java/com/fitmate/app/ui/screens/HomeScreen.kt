@@ -1,5 +1,7 @@
 package com.fitmate.app.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,9 +21,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.fitmate.app.model.UserProfile
@@ -119,6 +123,7 @@ private fun WeeklyActivityCard(stats: WorkoutStats) {
 
 @Composable
 private fun TodayCard(session: WorkoutSession?, onOpenWorkouts: () -> Unit) {
+    val context = LocalContext.current
     Card(
         Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -132,7 +137,7 @@ private fun TodayCard(session: WorkoutSession?, onOpenWorkouts: () -> Unit) {
                 Text("No session planned today.")
             } else {
                 Text(
-                    "${session.emoji} ${session.focus}",
+                    "${session.emoji} ${session.dayLabel}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -143,7 +148,15 @@ private fun TodayCard(session: WorkoutSession?, onOpenWorkouts: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(Modifier.height(4.dp))
-                    Button(onClick = onOpenWorkouts) { Text("Start workout") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onOpenWorkouts) { Text("Start workout") }
+                        OutlinedButton(onClick = {
+                            val first = session.exercises.first()
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(first.youtubeUrl))
+                            )
+                        }) { Text("▶ Watch") }
+                    }
                 }
             }
         }

@@ -20,8 +20,25 @@ abstract class Exercise(
     val description: String,
     val level: Difficulty,
     /** Metabolic Equivalent of Task: how many times resting energy this activity burns. */
-    val met: Double
+    val met: Double,
+    /**
+     * Optional link to one specific "how to do it" video on YouTube.
+     * Leave it blank and [youtubeUrl] falls back to a YouTube search for
+     * this exercise, so the link can never go dead. To pin a single video,
+     * set this to its full https://www.youtube.com/watch?v=… URL in
+     * [ExerciseLibrary] — that is the one place to change it.
+     */
+    val videoUrl: String = ""
 ) : Identifiable, Describable {
+
+    abstract val category: ExerciseCategory
+
+    /** YouTube link for this exercise: the pinned video, or a YouTube search for it. */
+    val youtubeUrl: String
+        get() = videoUrl.ifBlank {
+            "https://www.youtube.com/results?search_query=" +
+                ("$name correct form how to").replace(" ", "+")
+        }
 
     abstract val category: ExerciseCategory
 
@@ -50,8 +67,9 @@ class StrengthExercise(
     met: Double,
     val muscleGroup: MuscleGroup,
     val sets: Int,
-    val reps: Int
-) : Exercise(id, name, description, level, met) {
+    val reps: Int,
+    videoUrl: String = ""
+) : Exercise(id, name, description, level, met, videoUrl) {
 
     override val category: ExerciseCategory get() = ExerciseCategory.STRENGTH
 
@@ -62,7 +80,7 @@ class StrengthExercise(
         ceil((sets * reps * 4 + (sets - 1) * 90) / 60.0).toInt()
 
     override fun scaledFor(level: Difficulty): StrengthExercise =
-        StrengthExercise(id, name, description, level, met, muscleGroup, sets + level.extraSets, reps)
+        StrengthExercise(id, name, description, level, met, muscleGroup, sets + level.extraSets, reps, videoUrl)
 }
 
 /** `open` so that [HiitExercise] can extend it. */
@@ -72,8 +90,9 @@ open class CardioExercise(
     description: String,
     level: Difficulty,
     met: Double,
-    val durationMinutes: Int
-) : Exercise(id, name, description, level, met) {
+    val durationMinutes: Int,
+    videoUrl: String = ""
+) : Exercise(id, name, description, level, met, videoUrl) {
 
     override val category: ExerciseCategory get() = ExerciseCategory.CARDIO
 
@@ -82,7 +101,7 @@ open class CardioExercise(
     override fun estimatedMinutes(): Int = durationMinutes
 
     override fun scaledFor(level: Difficulty): CardioExercise =
-        CardioExercise(id, name, description, level, met, (durationMinutes * level.durationFactor).roundToInt())
+        CardioExercise(id, name, description, level, met, (durationMinutes * level.durationFactor).roundToInt(), videoUrl)
 }
 
 /** Multi-level inheritance: Exercise → CardioExercise → HiitExercise. */
@@ -94,10 +113,12 @@ class HiitExercise(
     met: Double,
     val rounds: Int,
     val workSeconds: Int,
-    val restSeconds: Int
+    val restSeconds: Int,
+    videoUrl: String = ""
 ) : CardioExercise(
     id, name, description, level, met,
-    durationMinutes = ceil(rounds * (workSeconds + restSeconds) / 60.0).toInt()
+    durationMinutes = ceil(rounds * (workSeconds + restSeconds) / 60.0).toInt(),
+    videoUrl = videoUrl
 ) {
 
     override val category: ExerciseCategory get() = ExerciseCategory.HIIT
@@ -109,7 +130,7 @@ class HiitExercise(
         super.caloriesBurned(weightKg, minutes) * AFTERBURN_BONUS
 
     override fun scaledFor(level: Difficulty): HiitExercise =
-        HiitExercise(id, name, description, level, met, rounds + level.extraSets * 2, workSeconds, restSeconds)
+        HiitExercise(id, name, description, level, met, rounds + level.extraSets * 2, workSeconds, restSeconds, videoUrl)
 
     companion object {
         private const val AFTERBURN_BONUS = 1.15
@@ -123,8 +144,9 @@ class FlexibilityExercise(
     level: Difficulty,
     met: Double,
     val holdSeconds: Int,
-    val rounds: Int
-) : Exercise(id, name, description, level, met) {
+    val rounds: Int,
+    videoUrl: String = ""
+) : Exercise(id, name, description, level, met, videoUrl) {
 
     override val category: ExerciseCategory get() = ExerciseCategory.FLEXIBILITY
 
@@ -135,5 +157,5 @@ class FlexibilityExercise(
         maxOf(1, ceil(holdSeconds * rounds * 2 / 60.0).toInt())
 
     override fun scaledFor(level: Difficulty): FlexibilityExercise =
-        FlexibilityExercise(id, name, description, level, met, holdSeconds, rounds + level.extraSets)
+        FlexibilityExercise(id, name, description, level, met, holdSeconds, rounds + level.extraSets, videoUrl)
 }

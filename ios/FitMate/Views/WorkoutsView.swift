@@ -16,6 +16,8 @@ struct WorkoutsView: View {
     @State private var mode: Mode = .plan
     @State private var category: ExerciseCategory? = nil
     @State private var exerciseToLog: Exercise? = nil
+    // CultFit-style day strip: Day 1 is Monday. Today is selected first.
+    @State private var selectedDay: Int = Weekday.today.rawValue
 
     var body: some View {
         NavigationStack {
@@ -31,6 +33,35 @@ struct WorkoutsView: View {
                 if mode == .plan, let plan = store.plan {
                     Section {
                         PlanSummary(plan: plan, weightKg: profile.weightKg)
+                    }
+                    // Day 1–7 strip, like CultFit's weekly schedule.
+                    Section("Pick a day") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(plan.sessions) { session in
+                                    Button(session.isRestDay ? "Day \(session.dayNumber) · Rest" : "Day \(session.dayNumber) · \(session.day.shortName)") {
+                                        selectedDay = session.dayNumber
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .tint(session.dayNumber == selectedDay ? Color.brand : .secondary)
+                                }
+                            }
+                        }
+                    }
+                    if let day = plan.session(forDayNumber: selectedDay), !day.isRestDay {
+                        Section(day.dayLabel) {
+                            ForEach(day.exercises) { exercise in
+                                DescribableRow(item: exercise) {
+                                    HStack(spacing: 8) {
+                                        if let url = URL(string: exercise.youtubeUrl) {
+                                            Link("▶ Watch", destination: url)
+                                        }
+                                        Button("Log") { exerciseToLog = exercise }
+                                            .buttonStyle(.bordered)
+                                    }
+                                }
+                            }
+                        }
                     }
                     Section("This week") {
                         ForEach(plan.sessions) { session in
@@ -76,7 +107,7 @@ private struct PlanSummary: View {
                 figure("\(plan.weeklyMinutes)", "min / week")
                 figure("\(Int(plan.weeklyCalories(weightKg: weightKg).rounded()))", "kcal / week")
             }
-            Text("Change your goal or experience in Profile to get a new plan.")
+            Text("Day-by-day split: Day 1 is Monday, Day 7 is Sunday. Tap a day above to see its exercises, then tap ▶ Watch to see how to do each move on YouTube. Change your goal or experience in Profile to get a new plan.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -105,8 +136,13 @@ private struct SessionRow: View {
             DisclosureGroup {
                 ForEach(session.exercises) { exercise in
                     DescribableRow(item: exercise) {
-                        Button("Log") { onLog(exercise) }
-                            .buttonStyle(.bordered)
+                        HStack(spacing: 8) {
+                            if let url = URL(string: exercise.youtubeUrl) {
+                                Link("▶ Watch", destination: url)
+                            }
+                            Button("Log") { onLog(exercise) }
+                                .buttonStyle(.bordered)
+                        }
                     }
                 }
             } label: {
@@ -141,6 +177,10 @@ private struct ExerciseRow: View {
             Text("\(exercise.category.label) · \(exercise.level.label) · ≈\(calories) kcal in \(minutes) min")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(Color.brand)
+            if let url = URL(string: exercise.youtubeUrl) {
+                Link("▶ Watch how to do it on YouTube", destination: url)
+                    .font(.subheadline.weight(.semibold))
+            }
         }
         .padding(.vertical, 4)
     }

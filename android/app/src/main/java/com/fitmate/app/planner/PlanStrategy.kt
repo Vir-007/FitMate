@@ -33,8 +33,13 @@ abstract class BasePlanStrategy : PlanStrategy {
     protected abstract fun weeklySchedule(): List<WorkoutSession>
 
     final override fun buildPlan(level: Difficulty): WorkoutPlan {
-        val sessions = weeklySchedule().map { session ->
-            WorkoutSession(session.day, session.focus, session.exercises.map { it.scaledFor(level) })
+        // Day 1 is Monday, Day 7 is Sunday: the list order is the week order.
+        val sessions = weeklySchedule().mapIndexed { index, session ->
+            WorkoutSession(
+                session.day, session.focus,
+                session.exercises.map { it.scaledFor(level) },
+                dayNumber = index + 1
+            )
         }
         return WorkoutPlan(planName, goal, level, sessions)
     }
@@ -50,13 +55,14 @@ class FatLossStrategy : BasePlanStrategy() {
     override val goal = FitnessGoal.LOSE_WEIGHT
     override val planName = "Fat Burn Program"
 
+    // CultFit-style week: every day has a clear name — Day 1 Chest Day, Day 2 Leg Day, …
     override fun weeklySchedule() = listOf(
-        day(MONDAY, "HIIT + Full body", "burpees", "squats", "pushups", "crunches"),
-        day(TUESDAY, "Steady cardio", "running", "hamstring_stretch"),
-        day(WEDNESDAY, "Active recovery", "brisk_walk", "sun_salutation", "cat_cow"),
-        day(THURSDAY, "HIIT + Legs", "mountain_climbers", "lunges", "glute_bridge"),
-        day(FRIDAY, "Cardio + Upper body", "cycling", "rows", "shoulder_press"),
-        day(SATURDAY, "Tabata finisher", "tabata", "jump_rope", "childs_pose"),
+        day(MONDAY, "Full-Body HIIT Day", "burpees", "squats", "pushups", "crunches"),
+        day(TUESDAY, "Cardio Day", "running", "crunches", "hamstring_stretch"),
+        day(WEDNESDAY, "Leg Day", "mountain_climbers", "lunges", "glute_bridge"),
+        day(THURSDAY, "Upper-Body Day", "cycling", "rows", "shoulder_press", "dips"),
+        day(FRIDAY, "Tabata Day", "tabata", "jump_rope", "childs_pose"),
+        day(SATURDAY, "Recovery Yoga Day", "brisk_walk", "sun_salutation", "cat_cow"),
         rest(SUNDAY)
     )
 }
@@ -66,12 +72,12 @@ class MuscleGainStrategy : BasePlanStrategy() {
     override val planName = "Push / Pull / Legs"
 
     override fun weeklySchedule() = listOf(
-        day(MONDAY, "Push", "pushups", "shoulder_press", "dips", "crunches"),
-        day(TUESDAY, "Pull", "rows", "curls", "deadlifts"),
-        day(WEDNESDAY, "Legs", "squats", "lunges", "glute_bridge", "crunches"),
-        day(THURSDAY, "Mobility", "cat_cow", "hip_opener", "hamstring_stretch"),
-        day(FRIDAY, "Upper body", "pushups", "rows", "shoulder_press", "curls"),
-        day(SATURDAY, "Lower body + Core", "squats", "deadlifts", "crunches"),
+        day(MONDAY, "Chest Day", "pushups", "dips", "crunches"),
+        day(TUESDAY, "Back Day", "rows", "curls", "deadlifts"),
+        day(WEDNESDAY, "Leg Day", "squats", "lunges", "glute_bridge", "crunches"),
+        day(THURSDAY, "Shoulder Day", "shoulder_press", "pushups", "dips"),
+        day(FRIDAY, "Full-Body Day", "squats", "rows", "pushups", "deadlifts"),
+        day(SATURDAY, "Mobility Day", "cat_cow", "hip_opener", "hamstring_stretch", "sun_salutation"),
         rest(SUNDAY)
     )
 }
@@ -81,12 +87,12 @@ class GeneralFitnessStrategy : BasePlanStrategy() {
     override val planName = "Balanced Fitness"
 
     override fun weeklySchedule() = listOf(
-        day(MONDAY, "Full-body strength", "squats", "pushups", "rows", "crunches"),
-        day(TUESDAY, "Cardio", "running", "hamstring_stretch"),
-        day(WEDNESDAY, "Yoga flow", "sun_salutation", "cobra", "childs_pose"),
-        day(THURSDAY, "HIIT", "mountain_climbers", "lunges", "glute_bridge"),
-        day(FRIDAY, "Cardio + Core", "cycling", "crunches"),
-        day(SATURDAY, "Outdoor walk", "brisk_walk", "hip_opener"),
+        day(MONDAY, "Full-Body Day", "squats", "pushups", "rows", "crunches"),
+        day(TUESDAY, "Cardio Day", "running", "hamstring_stretch"),
+        day(WEDNESDAY, "Yoga Day", "sun_salutation", "cobra", "childs_pose"),
+        day(THURSDAY, "HIIT Day", "mountain_climbers", "lunges", "glute_bridge"),
+        day(FRIDAY, "Core & Cardio Day", "cycling", "crunches"),
+        day(SATURDAY, "Legs & Walk Day", "brisk_walk", "hip_opener", "squats"),
         rest(SUNDAY)
     )
 }
@@ -99,12 +105,12 @@ class FlexibilityStrategy : BasePlanStrategy() {
         // Generics in action: grab every stretch in the library without listing ids.
         val allStretches = ExerciseLibrary.ofType<FlexibilityExercise>()
         return listOf(
-            day(MONDAY, "Morning yoga", "sun_salutation", "cat_cow", "cobra"),
-            day(TUESDAY, "Walk + Hips", "brisk_walk", "hip_opener", "hamstring_stretch"),
-            WorkoutSession(WEDNESDAY, "Full stretch routine", allStretches),
-            day(THURSDAY, "Core & posture", "glute_bridge", "crunches", "cobra"),
-            day(FRIDAY, "Yoga flow", "sun_salutation", "childs_pose", "hip_opener"),
-            day(SATURDAY, "Easy cycling", "cycling", "hamstring_stretch"),
+            day(MONDAY, "Yoga Day", "sun_salutation", "cat_cow", "cobra"),
+            day(TUESDAY, "Hips Day", "brisk_walk", "hip_opener", "hamstring_stretch"),
+            WorkoutSession(WEDNESDAY, "Full Stretch Day", allStretches),
+            day(THURSDAY, "Core Day", "glute_bridge", "crunches", "cobra"),
+            day(FRIDAY, "Yoga Flow Day", "sun_salutation", "childs_pose", "hip_opener"),
+            day(SATURDAY, "Stretch & Cycle Day", "cycling", "hamstring_stretch"),
             rest(SUNDAY)
         )
     }

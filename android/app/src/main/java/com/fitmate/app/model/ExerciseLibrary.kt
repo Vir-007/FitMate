@@ -7,6 +7,12 @@ import com.fitmate.app.model.Difficulty.INTERMEDIATE
 /**
  * SINGLETON: Kotlin's `object` keyword creates exactly one shared instance,
  * so the whole app reads from the same exercise catalogue.
+ *
+ * VIDEOS: every exercise gets a YouTube link from [Exercise.youtubeUrl].
+ * By default that is a YouTube search for "how to do <exercise> with correct
+ * form", so the link never goes dead. To pin one specific video for an
+ * exercise, pass its full watch URL as `videoUrl = "https://www.youtube.com/watch?v=…"`
+ * on that exercise below — that is the one place to change it.
  */
 object ExerciseLibrary {
 
