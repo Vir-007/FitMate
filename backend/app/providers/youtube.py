@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import re
 from datetime import datetime
 from typing import Optional
@@ -9,7 +10,7 @@ from dotenv import load_dotenv
 from app.models.tutorial import Tutorial
 
 
-load_dotenv("backend/.env")
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 BASE_URL = "https://www.googleapis.com/youtube/v3"

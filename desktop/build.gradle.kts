@@ -59,3 +59,15 @@ compose.desktop {
         }
     }
 }
+
+tasks.withType<JavaExec>().configureEach {
+    if (name == "run") {
+        doFirst {
+            jvmArgs(
+                "--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
+                "--add-exports=java.desktop/sun.lwawt=ALL-UNNAMED",
+                "--add-exports=java.desktop/sun.lwawt.macosx=ALL-UNNAMED"
+            )
+        }
+    }
+}

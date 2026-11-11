@@ -139,7 +139,7 @@ fun TutorialPlayer(
                     JLabel("Starting Chromium player...", SwingConstants.CENTER),
                     BorderLayout.CENTER
                 )
-                ChromiumRuntime.load(tutorial.embedUrl, this)
+            ChromiumRuntime.load(tutorial.embedUrl, this)
             }
         },
         update = {}
