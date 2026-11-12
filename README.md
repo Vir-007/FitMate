@@ -42,6 +42,8 @@ The project demonstrates how Object-Oriented Programming concepts can be used to
 
 OOP is the main foundation of FitMate. Instead of writing the entire application in one place, the project is divided into classes, where each class has its own responsibility.
 
+> 📘 **Full code walkthrough:** [docs/oop/OOP_CONCEPTS.md](docs/oop/OOP_CONCEPTS.md) shows every OOP concept and design pattern with the actual code, file/line references and C++ equivalents, plus the [class diagram](docs/oop/class_diagram.png).
+
 ### 1. Classes and Objects
 
 A class acts as a blueprint, while an object is an instance of that class.
